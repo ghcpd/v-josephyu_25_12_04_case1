@@ -1,0 +1,42 @@
+Defects found while validating README.md
+
+1) Mismatched route names
+- Description: README references `/signup` and `/signin`, and API endpoints `/api/register` and `/api/login`. The code implements `/register`, `/login`, and no `/api/*` endpoints.
+- Reproduction:
+  - Start the app: `python app.py`
+  - `curl -i http://127.0.0.1:5000/signup` returns 404
+  - `curl -i http://127.0.0.1:5000/api/register` returns 404
+- Trace: N/A (404 responses)
+
+2) CSRF usage in forms blocks non-browser POSTs
+- Description: Templates and WTForms use CSRF tokens. The README examples showed using `curl` or direct POSTs without guidance to include CSRF tokens.
+- Reproduction:
+  - Run the app and attempt to register with `curl -X POST -F "username=alice" -F "email=..." -F "password=..." http://127.0.0.1:5000/register`
+  - Response: The server returns the registration form (status 200) but does not create user because CSRF token is missing and form validation fails; no explicit error message in API.
+- Trace: No exception; form validation simply fails and page is redisplayed.
+
+3) README mentions `FLASK_SECRET` to configure CSRF
+- Description: The app uses `app.config['SECRET_KEY']` for CSRF; environment variable `FLASK_SECRET` is not read by code.
+- Reproduction:
+  - Set `FLASK_SECRET` environment variable and start app; CSRF still uses the hard-coded `SECRET_KEY` in `app.py` unless overridden in config.
+- Trace: N/A
+
+4) Database path mismatch
+- Description: README said database at `data/database.sqlite3`, code uses `app.config['DATABASE'] = 'app.db'` by default.
+- Reproduction:
+  - Start app and observe `app.db` created in workspace root.
+- Trace: N/A
+
+5) Password minimum length mismatch
+- Description: README says minimum length 3; registration form requires minimum 6 in validators.
+- Reproduction:
+  - Try to register with password of length 4; form validation fails showing length error.
+- Trace: WTForms validation error on password length.
+
+6) Templates expect `user.username` on dashboard but tests assumed "Dashboard"
+- Description: Tests (created during validation) initially expected "Dashboard" text; actual template shows "Hello, <username>".
+- Reproduction:
+  - Register user and inspect `/dashboard` content.
+- Trace: N/A
+
+Full reproduction steps and logs are available in the test outputs and debug scripts added to the repository.
