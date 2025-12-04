@@ -1,0 +1,80 @@
+Defects found while validating README.md vs actual implementation
+===============================================================
+
+Summary
+-------
+This project README intentionally contained mismatches. I followed the README and exercised the code. The results below list each defect, how to reproduce it, and example traces from running the tests.
+
+1) Wrong route names in README
+   - README claims endpoints: /signup, /signin, /profile
+   - Actual app uses: /register, /login, /dashboard
+   Reproduction (quick):
+     - GET /signup -> 404
+     - GET /register -> 200
+
+2) API endpoints in README missing from code
+   - README documents POST /api/register and /api/login (JSON APIs)
+   - No such blueprints or handlers exist; POSTing to /api/register returns 404/405
+
+3) Database path mismatch
+   - README: data/database.sqlite3
+   - Actual app.config['DATABASE'] default: app.db (at repo root)
+
+4) Environment variable for secret not documented correctly
+   - README says use FLASK_SECRET for CSRF.
+   - Actual app reads SECRET_KEY from app.config (hard-coded in app.py). FLASK_SECRET is not used.
+
+5) Email & password validation mismatch
+   - README: Email optional; password min length 3
+   - Actual code: Email is required and unique; password length minimum is 6
+
+6) Sessions storage claim incorrect
+   - README claims sessions stored server-side in Redis — the app uses default Flask session (no Redis).
+
+7) Quick Start/CLI mismatch
+   - README suggests `python app.py --host=0.0.0.0 --port=8080` which does not pass through to app.run (app.py runs `app.run(debug=True)` with no arg parsing). Use `flask run` or update app.py CLI to accept args.
+
+
+How I reproduced these problems
+--------------------------------
+- I added pytest tests that exercise routes and validators (see tests/). Running pytest revealed behavior differences.
+- Example failing trace seen while developing tests (initial test run before disabling test CSRF):
+
+  Failing test output (excerpt):
+
+  tests\test_auth_flow.py::test_register_login_logout_flow - assert (200 == 302 or 200 == 301)
+  tests\test_readme_consistency.py::test_password_and_email_validation_on_register - assertion about validator message missed
+
+  (During iteration I updated tests to disable CSRF and stabilized the assertions; final test run: 6 passed.)
+
+
+Recommended fixes
+-----------------
+1) Update README to reflect actual routes and behaviors (I added corrected_readme.md with working instructions).
+2) Clarify DB location: `app.db` is used by default.
+3) Document SECURITY: set SECRET_KEY from env var (FLASK_SECRET can be read by app) and document this in README.
+4) If API endpoints are desired, add JSON endpoints `/api/register` and `/api/login`.
+5) Clarify validation constraints (email required, password >= 6) — tests reflect this behavior.
+6) Remove Redis session claim or implement server-side sessions if that is intended.
+
+Reproducer commands (run from repository root)
+---------------------------------------------
+1) Create venv and install deps
+   (bash)
+     python3 -m venv .venv
+     source .venv/bin/activate
+     pip install -r requirements.txt
+
+   (powershell)
+     python -m venv .venv
+     .venv\Scripts\Activate.ps1
+     pip install -r requirements.txt
+
+2) Run the tests (after activating .venv):
+     python -m pytest -q
+
+
+Artifacts
+---------
+- `tests/` — pytest tests I used to validate behaviors and to reproduce failures.
+- `corrected_readme.md` — corrected documentation with working commands and examples.
