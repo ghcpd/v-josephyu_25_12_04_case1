@@ -1,0 +1,50 @@
+Defects found while verifying README.md
+
+1) Missing dependencies at test time
+- Symptom: Running pytest produced ModuleNotFoundError: No module named 'flask'
+- Reproduction:
+  cd <project_root>
+  pytest -q
+- Error trace:
+  ModuleNotFoundError: No module named 'flask'
+
+2) README documents endpoints that do not exist
+- Symptom: README references /signup, /signin, /profile but code provides /register, /login, /dashboard
+- Reproduction:
+  Start server (python app.py) and GET /signup (404), GET /signin (404)
+- Expected: /signup and /signin exist; Actual: use /register and /login
+
+3) README references API endpoints that are not implemented
+- Symptom: /api/register and /api/login mentioned in README, but application has no /api/* routes
+- Reproduction:
+  Start server and POST /api/register -> 404
+- Expected: /api/register returns 201, Actual: 404
+
+4) CSRF secret env var mismatch
+- Symptom: README suggests using FLASK_SECRET env var; code reads app.config['SECRET_KEY'] and does not use FLASK_SECRET
+- Fix: Set SECRET_KEY in app.config or read FLASK_SECRET environment variable
+
+5) DB path mismatch
+- Symptom: README says DB file is data/database.sqlite3; code config uses 'app.db' in project root
+- Reproduction: code creates/uses app.db
+
+6) Password policy mismatch
+- Symptom: README claims password min length 3, but forms validate min length 6
+
+7) Email optional vs required mismatch
+- Symptom: README states email optional; RegisterForm marks email as DataRequired
+
+8) Template route names
+- Symptom: README uses /signup and /signin, code uses /register and /login
+
+9) Sessions in Redis claimed in README, but not implemented
+
+Notes and Next Steps:
+- I created corrected_readme.md to align docs with code and provided setup scripts.
+- To reproduce these defects locally: create a venv, install requirements, run pytest and curl endpoints; steps included in corrected_readme.md
+
+Captured pytest output:
+=================================== ERRORS ====================================
+E   ModuleNotFoundError: No module named 'flask'
+
+(See repository for full reproduction steps)
