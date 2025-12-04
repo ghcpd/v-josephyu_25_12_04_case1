@@ -1,0 +1,51 @@
+Defects discovered while verifying README.md against the actual implementation
+==========================================================================
+
+1) README routes do not exist (/signup, /signin, /profile, /api/*)
+   - Repro:
+     .\.venv\Scripts\python scripts\check_readme_endpoints.py
+   - Trace:
+     GET /signup -> 404
+     GET /signin -> 404
+     GET /profile -> 404
+     POST /api/register -> 404
+     POST /api/login -> 404
+
+2) Quick start host/port flags ignored
+   - Repro:
+     python app.py --host=0.0.0.0 --port=8080
+   - Trace (excerpt):
+     * Running on http://127.0.0.1:5000  (debug=True)
+     (CLI host/port values are not used because app.py does not parse argv.)
+
+3) FLASK_SECRET env var not used
+   - Repro:
+     $env:FLASK_SECRET='abc123'; python -c "from app import app; print(app.config['SECRET_KEY'])"
+   - Trace:
+     replace-with-a-strong-secret-key
+
+4) Email is required (doc says optional)
+   - Repro:
+     POST /register with email="" (see test_files/test_auth_flow.py::test_email_required_validation)
+   - Trace (form error):
+     "This field is required."
+
+5) Password minimum length is 6 (doc says 3)
+   - Repro:
+     POST /register with password="123" (see test_files/test_auth_flow.py::test_password_min_length_validation)
+   - Trace (form error):
+     "Field must be between 6 and 128 characters long."
+
+6) Confirm password field not present
+   - Repro:
+     GET /register form (templates/register.html); only username/email/password fields are rendered.
+
+7) Database location mismatch
+   - Repro:
+     Run app; SQLite file created at app.db (see app.config['DATABASE']).
+   - Doc claims data/database.sqlite3.
+
+8) Sessions not stored in Redis
+   - Repro:
+     Code uses Flask defaults; no Redis dependency/config present.
+   - Doc claims server-side sessions in Redis.
