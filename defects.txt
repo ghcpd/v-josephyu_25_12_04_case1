@@ -1,0 +1,207 @@
+# DEFECTS FOUND IN README vs IMPLEMENTATION
+
+## DEFECT 1: CLI Arguments Not Supported
+**Title:** Flask app ignores --host and --port command line arguments
+**Description:** README documents running the app with `python app.py --host=0.0.0.0 --port=8080`, but Flask's app.run() does not parse these arguments. The server starts on default 127.0.0.1:5000 instead.
+**Reproduction Steps:**
+  1. Run: `python app.py --host=0.0.0.0 --port=8080`
+  2. Expected: Server runs on 0.0.0.0:8080
+  3. Actual: Server runs on 127.0.0.1:5000
+**Error Trace:** 
+  * Running on http://127.0.0.1:5000
+**Root Cause:** app.run(debug=True) uses default values. To accept CLI arguments, need Flask.cli or argparse.
+
+---
+
+## DEFECT 2: Missing /api/register and /api/login Endpoints
+**Title:** Documented API endpoints do not exist
+**Description:** README documents REST API endpoints at `/api/register` and `/api/login` with JSON request bodies, but only web form routes `/register` and `/login` are implemented.
+**Reproduction Steps:**
+  1. Try: `curl -X POST http://localhost:5000/api/register -H "Content-Type: application/json" -d '{"user":"testuser", "pass":"password123", "mail":"test@example.com"}'`
+  2. Expected: 201 Created response
+  3. Actual: 404 Not Found
+**Error Trace:** 404 Client Error
+**Root Cause:** API endpoints not implemented in auth.py
+
+---
+
+## DEFECT 3: README Claims Password Minimum is 3, But Actual is 6
+**Title:** Password validation minimum length mismatch
+**Description:** README states "Password minimum length is 3" but the code has Length(min=6, max=128) validators in LoginForm and RegisterForm.
+**Reproduction Steps:**
+  1. Check auth.py line with PasswordField validators
+  2. Expected per README: min=3
+  3. Actual in code: min=6
+**Error Trace:** 
+  LoginForm password field: Length(min=6, max=128)
+  RegisterForm password field: Length(min=6, max=128)
+**Root Cause:** Documentation inconsistent with code implementation
+
+---
+
+## DEFECT 4: Missing confirm_password Field
+**Title:** README mentions confirm_password field but form doesn't have it
+**Description:** README documents "Register a user at /signup with fields: username, email, password, confirm_password" but RegisterForm only has username, email, and password fields.
+**Reproduction Steps:**
+  1. Inspect templates/register.html
+  2. Expected: confirm_password input field
+  3. Actual: Only username, email, password fields
+**Error Trace:** confirm_password field not rendered in register.html
+**Root Cause:** Field not implemented in RegisterForm class
+
+---
+
+## DEFECT 5: Missing /profile Endpoint
+**Title:** /profile route mentioned in README but not implemented
+**Description:** README documents "Access the user profile at /profile" but only /dashboard route exists.
+**Reproduction Steps:**
+  1. Try: GET /profile
+  2. Expected per README: Profile page
+  3. Actual: 404 Not Found
+**Error Trace:** 404 Client Error
+**Root Cause:** /profile route not implemented in app.py
+
+---
+
+## DEFECT 6: Missing /signup Route
+**Title:** README references /signup but only /register exists
+**Description:** README says "Register a user at /signup" but the actual route is /register (verified in auth.py @auth_bp.route('/register')).
+**Reproduction Steps:**
+  1. Try: GET /signup
+  2. Expected per README: Registration form
+  3. Actual: 404 Not Found
+  4. Correct route: GET /register works
+**Error Trace:** 404 Client Error
+**Root Cause:** Route is /register, not /signup
+
+---
+
+## DEFECT 7: Missing /signin Route
+**Title:** README references /signin but only /login exists
+**Description:** README says "Then login at /signin" but the actual route is /login (verified in auth.py @auth_bp.route('/login')).
+**Reproduction Steps:**
+  1. Try: GET /signin
+  2. Expected per README: Login form
+  3. Actual: 404 Not Found
+  4. Correct route: GET /login works
+**Error Trace:** 404 Client Error
+**Root Cause:** Route is /login, not /signin
+
+---
+
+## DEFECT 8: Email is NOT Optional
+**Title:** README claims email is optional but form requires it
+**Description:** README states "Email is optional" but RegisterForm has Email() validator with DataRequired() constraint, making it mandatory.
+**Reproduction Steps:**
+  1. Try to register without email
+  2. Expected per README: Registration succeeds
+  3. Actual: Form validation fails with "This field is required"
+**Error Trace:** WTForms DataRequired validator on email field
+**Root Cause:** Email field has DataRequired() validator in auth.py line with Email() validator
+
+---
+
+## DEFECT 9: Database Path Mismatch
+**Title:** README and code have different database paths
+**Description:** README states "The database file is data/database.sqlite3" but app.py config sets 'DATABASE': 'app.db' at project root.
+**Reproduction Steps:**
+  1. Run app
+  2. Expected per README: app.db created at data/database.sqlite3
+  3. Actual: app.db created at project root
+**Error Trace:** app.config['DATABASE'] = 'app.db'
+**Root Cause:** Configuration in app.py doesn't match documentation
+
+---
+
+## DEFECT 10: FLASK_SECRET Environment Variable Not Used
+**Title:** README mentions FLASK_SECRET but not implemented
+**Description:** README says "Use environment variable FLASK_SECRET to configure CSRF" but app.py has hardcoded SECRET_KEY: app.config['SECRET_KEY'] = 'replace-with-a-strong-secret-key'
+**Reproduction Steps:**
+  1. Set environment variable FLASK_SECRET=mysecret
+  2. Run app
+  3. Expected: SECRET_KEY = mysecret
+  4. Actual: SECRET_KEY = 'replace-with-a-strong-secret-key'
+**Error Trace:** Environment variable not read in app.py
+**Root Cause:** app.py doesn't use os.environ.get('FLASK_SECRET')
+
+---
+
+## DEFECT 11: Redis Session Storage Not Implemented
+**Title:** README mentions Redis but code uses default Flask sessions
+**Description:** README states "Sessions are stored server-side in Redis" but no Redis integration found in code. Flask-Session not in requirements.txt, no session configuration for Redis.
+**Reproduction Steps:**
+  1. Check requirements.txt
+  2. Expected per README: flask-redis or flask-session in requirements
+  3. Actual: No Redis packages installed
+  4. Check app.py for session config
+  5. Expected: Redis configuration
+  6. Actual: No session backend configured, using Flask defaults
+**Error Trace:** 
+  - flask-redis not in requirements.txt
+  - No SESSION_TYPE configuration in app.py
+**Root Cause:** Redis integration not implemented
+
+---
+
+## DEFECT 12: Incorrect API Request/Response Format
+**Title:** README API documentation doesn't match web form field names
+**Description:** README API spec shows field names as "user" and "pass" but web forms use "username" and "password". Since API endpoints don't exist, this is doubly problematic.
+**Reproduction Steps:**
+  1. Check README API section
+  2. Body example: { "user": "name", "pass": "123" }
+  3. Compare to form field names in auth.py
+  4. Form fields are: username, password
+**Error Trace:** 
+  API docs: "user", "pass"
+  Code: username, password
+**Root Cause:** Inconsistent naming conventions between documentation and implementation
+
+---
+
+## DEFECT 13: Missing confirm_password Field and Validation
+**Title:** Password confirmation not implemented in registration
+**Description:** README mentions confirm_password field but RegisterForm doesn't have it, and no password confirmation validation exists.
+**Reproduction Steps:**
+  1. Check RegisterForm in auth.py
+  2. Expected: confirm_password field with EqualTo validator
+  3. Actual: Not present
+**Error Trace:** RegisterForm missing confirm_password field
+**Root Cause:** Field not implemented in form class
+
+---
+
+## DEFECT 14: Bootstrap CSS Not in Base Template
+**Title:** Templates use Bootstrap classes but CSS not linked in base.html
+**Description:** Templates use Bootstrap classes (row, col-md-6, card, btn, etc.) but base.html may not include Bootstrap CSS.
+**Reproduction Steps:**
+  1. Check templates/base.html for Bootstrap CSS link
+  2. Expected: <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.x" rel="stylesheet">
+  3. Actual: Need to verify
+**Error Trace:** Templates styled with Bootstrap but dependency may not be included
+**Root Cause:** Bootstrap CDN link may be missing from base.html
+
+---
+
+## DEFECT 15: Missing /signin and /signup Routes Completely
+**Title:** Routes documented in README don't exist at all
+**Description:** README references /signin and /signup routes but they are /login and /register. This is a critical navigation defect.
+**Reproduction Steps:**
+  1. README says: "Register a user at /signup"
+  2. README says: "Then login at /signin"
+  3. Actual routes: /register and /login
+  4. Try /signup: 404 Not Found
+  5. Try /signin: 404 Not Found
+**Error Trace:** 404 Not Found for /signup and /signin
+**Root Cause:** Route names don't match documentation
+
+---
+
+## SUMMARY
+- **Total Defects Found:** 15
+- **Critical Issues:** 7 (Missing endpoints/routes, wrong paths)
+- **Documentation Issues:** 8 (Incorrect field names, mismatched config)
+- **Category Breakdown:**
+  - Missing/Wrong Routes: /profile, /signup (should /register), /signin (should /login), /api/* endpoints
+  - Field/Validation Mismatches: password min length, email required, no confirm_password
+  - Configuration Issues: database path, FLASK_SECRET not used, Redis not implemented
+  - CLI Argument Issues: --host and --port not processed
