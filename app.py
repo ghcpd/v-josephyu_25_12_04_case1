@@ -1,10 +1,11 @@
+import os
 from flask import Flask, render_template, redirect, url_for
 from flask_login import LoginManager, login_required, current_user
 from models import init_db, get_connection, User
 from auth import auth_bp
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'replace-with-a-strong-secret-key'
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET', 'replace-with-a-strong-secret-key')
 app.config['DATABASE'] = 'app.db'  # SQLite file at root of workspace
 
 login_manager = LoginManager()
@@ -36,4 +37,9 @@ def dashboard():
     return render_template('dashboard.html', user=current_user)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', default='127.0.0.1')
+    parser.add_argument('--port', type=int, default=5000)
+    args = parser.parse_args()
+    app.run(debug=True, host=args.host, port=args.port)

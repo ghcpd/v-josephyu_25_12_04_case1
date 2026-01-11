@@ -1,0 +1,56 @@
+Defect Report - README vs Implementation
+
+Summary:
+The README contains multiple inaccurate instructions compared to the current implementation. Below are each defect, reproduction steps, and observed error traces.
+
+1) Route names differ
+- README: /signup and /signin
+- Implementation: /register and /login
+- Reproduction:
+  - Run tests: pytest tests/test_readme_examples.py::test_readme_routes_exist
+- Observed failure (initial test run):
+  -  AssertionError: Expected /signup to exist per README (404 != 200)
+
+2) API endpoints undocumented or mismatched
+- README: POST /api/register and /api/login
+- Implementation: No /api namespace endpoints present
+- Reproduction:
+  - Run tests: pytest tests/test_readme_examples.py::test_api_endpoints_exist
+- Observed failure (initial test run):
+  -  AssertionError: Expected /api/register to return 201 per README (404 != 201)
+
+3) Password minimum length mismatch
+- README: minimum length is 3
+- Implementation: WTForms validator enforces min length 6 on password
+- Reproduction:
+  - Run tests: pytest tests/test_readme_examples.py::test_password_min_length_per_readme
+- Observed failure (initial test run):
+  - Test expected registration to succeed; it failed because password length validation rejects short passwords
+
+4) Confirm-password missing in register form
+- README: register form includes confirm_password
+- Implementation: RegisterForm does not include a confirm_password field
+- Reproduction:
+  - Run tests: pytest tests/test_readme_examples.py::test_confirm_password_field_present_on_register
+- Observed failure (initial test run):
+  - AssertionError: confirm_password field not present in register form
+
+5) Database file path
+- README: database file is data/database.sqlite3
+- Implementation: app.config['DATABASE'] = 'app.db' at repository root
+- Reproduction:
+  - Inspect app.py and models.py
+
+6) CSRF/secret env variable mismatch
+- README: Use environment variable FLASK_SECRET to configure CSRF
+- Implementation: app uses app.config['SECRET_KEY'] hard-coded; no FLASK_SECRET usage
+- Reproduction:
+  - Inspect app.py
+
+7) Sessions stored in Redis claim is inaccurate
+- README: Sessions are stored server-side in Redis
+- Implementation: No Redis sessions; standard Flask session used
+- Reproduction:
+  - Inspect app.py and project dependencies
+
+Notes: Full failing traces and the pytest run log are available in the run history. The tests reflecting README expectations were intentionally written to reproduce these mismatches; they were then updated to validate the corrected documentation.
